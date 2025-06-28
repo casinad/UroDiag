@@ -228,10 +228,6 @@ const generatePDF = async (result: DiagnosticResult) => {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   yPosition = addText(result.diagnostic, margin, yPosition, pageWidth - 2 * margin, 12);
-  
-  if (result.severite) {
-    yPosition = addText(`Sévérité: ${result.severite}`, margin, yPosition, pageWidth - 2 * margin);
-  }
   yPosition += 10;
   
   // Alertes critiques
@@ -443,9 +439,6 @@ export default function ResultsPage({ result, onNewExam }: ResultsPageProps) {
             </div>
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded print:border print:border-blue-400">
               <h3 className="text-lg font-medium text-blue-900 print:text-base">{result.diagnostic}</h3>
-              {result.severite && (
-                <p className="text-blue-800 mt-2">Sévérité: {result.severite}</p>
-              )}
             </div>
           </div>
         </div>
