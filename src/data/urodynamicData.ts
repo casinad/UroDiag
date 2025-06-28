@@ -1562,16 +1562,16 @@ export function analyserUrodynamique(data: PatientData): DiagnosticResult {
       traitements.push(addItemWithTooltip("Dilatation urétrale"));
       traitements.push(addItemWithTooltip("Urétrotomie interne"));
     }
-	
-    if (indexContractilite >= 100 && indexContractilite < 120 && data.patientData.traitements.includes('Alpha-bloquants')) {
-      diagnostic += " (avec hypocontractilité relative possible à surveiller en cas d'échec des traitements alpha-bloquants)";
-    }
     
     recommandations.push(addItemWithTooltip("Traitement de l'obstruction pour prévenir la décompensation vésicale"));
     surveillance.push(addItemWithTooltip("Contrôle débitmétrie à 3 mois"));
     surveillance.push(addItemWithTooltip("Surveillance du résidu post-mictionnel"));
     pieges.push(addItemWithTooltip("Ne pas confondre avec hypocontractilité détrusorienne"));
     pieges.push(addItemWithTooltip("Vérifier l'absence de dyssynergie associée"));
+    if (indexContractilite >= 100 && indexContractilite < 120 && data.traitements.includes('Alpha-bloquants')) {
+      pieges.push(addItemWithTooltip("En cas de BCI limite, envisager une hypocontractilité relative si traitement alpha-bloquant inefficace"));
+    }
+
   }
   
   // 3. Hypocontractilité détrusorienne
