@@ -186,6 +186,23 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
       tooltip: 'Les anticholinergiques (oxybutynine, solifénacine, fésotérodine) bloquent les récepteurs muscariniques du détrusor, réduisant les contractions involontaires. Efficacité sur l\'urgence dans 70% des cas, mais effets secondaires (sécheresse buccale, constipation) chez 30% des patients.'
     });
   }
+  
+  if (diagnostic.includes('Hypocontractilité détrusorienne')) {
+    recommandations.push({
+      label: 'Apprentissage des manœuvres de double miction',
+      tooltip: 'Technique consistant à tenter une seconde miction après quelques minutes pour améliorer la vidange vésicale.'
+    });
+    
+    recommandations.push({
+      label: 'Auto-sondages intermittents propres si RPM > 100 ml persistant',
+      tooltip: 'Indiqué en cas de résidu post-mictionnel chronique, pour éviter infections et dilatation des voies urinaires.'
+    });
+	
+    recommandations.push({
+      label: 'Surveillance régulière de la fonction rénale et du haut appareil urinaire',
+      tooltip: 'Indispensable en cas de vidange incomplète chronique, pour prévenir les complications rénales silencieuses.'
+    });
+  }
 
   if (diagnostic.includes('Incontinence d\'effort')) {
     recommandations.push({
@@ -287,6 +304,19 @@ function genererTraitements(data: PatientData, diagnostic: string): Array<{ labe
       tooltip: 'Le mirabégron est un agoniste des récepteurs β3-adrénergiques qui relaxe le détrusor sans effet anticholinergique. Indiqué chez les patients âgés (risque cognitif), glaucome, ou intolérance aux anticholinergiques. Efficacité comparable avec meilleur profil de tolérance.'
     });
   }
+  
+  if (diagnostic.includes('Hypocontractilité détrusorienne')) {
+    
+    traitements.push({
+      label: 'Aucun traitement pharmacologique validé',
+      tooltip: 'Aucun médicament n’a démontré d’efficacité significative dans la restauration de la contractilité détrusorienne.'
+    });
+    
+    traitements.push({
+      label: 'Essai de parasympathomimétiques (bénéfice non prouvé, rarement utilisé)',
+      tooltip: 'Médicaments stimulant le détrusor (ex. béthanéchol), parfois essayés en dernière intention, mais peu efficaces et mal tolérés.'
+    });
+  }
 
   if (diagnostic.includes('Obstruction prostatique')) {
     traitements.push({
@@ -371,6 +401,17 @@ function genererPieges(data: PatientData, diagnostic: string): Array<{ label: st
       label: 'Éliminer les artefacts de remplissage rapide',
       tooltip: 'Des contractions détrusoriennes peuvent être artéfactuellement induites par un remplissage trop rapide (>50 ml/min) ou une irritation par la sonde. Confirmer l\'hyperactivité par un remplissage lent et répéter l\'examen si nécessaire.'
     });
+  }
+  
+  if (diagnostic === "Hypocontractilité détrusorienne") {
+	pieges.push({
+	  texte: "Ne pas confondre hypocontractilité avec obstruction en cas de symptômes similaires",
+	  tooltip: "Une obstruction et une vessie hypoactive peuvent se présenter par des symptômes identiques ; seule la pression-débit fait la distinction."
+	});
+	pieges.push({
+	  texte: "Écarter une cause médicamenteuse (anticholinergiques, opiacés)",
+	  tooltip: "Certains traitements freinent le détrusor et peuvent mimer une hypocontractilité vraie."
+	});
   }
 
   if (diagnostic.includes('Incontinence d\'effort')) {
