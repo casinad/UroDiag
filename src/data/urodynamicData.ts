@@ -213,12 +213,12 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
     });
 	
     recommandations.push({
-      label: 'Toxine botulique intra-détrusorienne si hyperactivité réfractaire ou mauvaise tolérance aux anticholinergiques',
+      label: 'Toxine botulique intra-détrusorienne en cas d’hyperactivité détrusorienne réfractaire ou d’intolérance aux anticholinergiques',
       tooltip: 'Utilisée en deuxième intention, la toxine botulique permet de diminuer l\'hyperactivité du détrusor lorsque les anticholinergiques sont inefficaces ou mal tolérés.'
     });
 	
     recommandations.push({
-      label: 'EMG périnéal pour confirmer une dyssynergie vraie',
+      label: 'EMG périnéal conseillé pour confirmer une dyssynergie vraie',
       tooltip: 'L’électromyogramme du sphincter permet de distinguer une dyssynergie vésico-sphinctérienne vraie d’une fausse poussée abdominale ou d’un artefact.'
     });
   }
