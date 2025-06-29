@@ -403,14 +403,14 @@ function genererPieges(data: PatientData, diagnostic: string): Array<{ label: st
     });
   }
   
-  if (diagnostic === "Hypocontractilité détrusorienne") {
+  if (diagnostic.includes('Hypocontractilité détrusorienne')) {
 	pieges.push({
-	  texte: "Ne pas confondre hypocontractilité avec obstruction en cas de symptômes similaires",
-	  tooltip: "Une obstruction et une vessie hypoactive peuvent se présenter par des symptômes identiques ; seule la pression-débit fait la distinction."
+	  label: 'Ne pas confondre hypocontractilité avec obstruction en cas de symptômes similaires',
+	  tooltip: 'Une obstruction et une vessie hypoactive peuvent se présenter par des symptômes identiques ; seule la pression-débit fait la distinction.'
 	});
 	pieges.push({
-	  texte: "Écarter une cause médicamenteuse (anticholinergiques, opiacés)",
-	  tooltip: "Certains traitements freinent le détrusor et peuvent mimer une hypocontractilité vraie."
+	  label: 'Écarter une cause médicamenteuse (anticholinergiques, opiacés)',
+	  tooltip: 'Certains traitements freinent le détrusor et peuvent mimer une hypocontractilité vraie.'
 	});
   }
 
