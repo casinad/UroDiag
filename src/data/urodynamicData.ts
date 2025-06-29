@@ -104,8 +104,25 @@ function determinerDiagnostic(
   const dyssynergie = data.emg.synergieDetrusorSphincter === 'dyssynergie';
   const incontinenceEffort = data.symptomes.includes('Incontinence d\'effort') || 
                             data.testsProvocation.testToux !== 'negatif';
+  const urgenturies = data.symptomes.includes('Urgenturies');
+  const fuitesMixtes = data.symptomes.includes('Fuites mixtes');
+  const pressionClotureUretrale = data.profilPression.pressionClotureUretrale;
 
-  // Diagnostic selon algorithme clinique
+  // Diagnostic selon algorithme clinique amélioré
+  
+  // Cas d'incontinence mixte (nouvelle logique)
+  if ((incontinenceEffort && urgenturies) || fuitesMixtes) {
+    if (contractionsInvolontaires && pressionClotureUretrale < 20) {
+      return 'Incontinence urinaire mixte (hyperactivité détrusorienne + insuffisance sphinctérienne)';
+    } else if (contractionsInvolontaires) {
+      return 'Incontinence urinaire mixte à prédominance urgence';
+    } else if (pressionClotureUretrale < 20) {
+      return 'Incontinence urinaire mixte à prédominance effort';
+    } else {
+      return 'Incontinence urinaire mixte';
+    }
+  }
+
   if (indexObstruction > 40) {
     if (dyssynergie) {
       return 'Dyssynergie vésico-sphinctérienne avec obstruction fonctionnelle';
@@ -124,7 +141,7 @@ function determinerDiagnostic(
     }
   }
 
-  if (incontinenceEffort && data.profilPression.pressionClotureUretrale < 20) {
+  if (incontinenceEffort && pressionClotureUretrale < 20) {
     return 'Incontinence d\'effort par insuffisance sphinctérienne';
   }
 
@@ -175,7 +192,7 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
     }
   }
 
-  if (diagnostic.includes('Hyperactivité détrusorienne')) {
+  if (diagnostic.includes('Hyperactivité détrusorienne') || diagnostic.includes('mixte')) {
     recommandations.push({
       label: 'Rééducation vésicale et techniques comportementales',
       tooltip: 'La rééducation vésicale comprend l\'éducation du patient, les techniques de distraction, les mictions programmées et les exercices de renforcement périnéal. Efficacité de 60-80% sur les symptômes d\'urgence avec amélioration de la qualité de vie.'
@@ -204,11 +221,27 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
     });
   }
 
-  if (diagnostic.includes('Incontinence d\'effort')) {
-    recommandations.push({
-      label: 'Rééducation périnéale spécialisée en première intention',
-      tooltip: 'La rééducation périnéale par kinésithérapeute spécialisé comprend exercices de Kegel, biofeedback et électrostimulation. Efficacité de 60-70% sur l\'incontinence d\'effort légère à modérée. Durée recommandée : 3-6 mois avec séances bi-hebdomadaires.'
-    });
+  if (diagnostic.includes('Incontinence d\'effort') || diagnostic.includes('mixte')) {
+    // Recommandation fusionnée pour éviter les doublons
+    if (diagnostic.includes('mixte')) {
+      recommandations.push({
+        label: 'Rééducation périnéale spécialisée en première intention, ciblée en cas de fuites d\'effort persistantes',
+        tooltip: 'La rééducation périnéale par kinésithérapeute spécialisé comprend exercices de Kegel, biofeedback et électrostimulation. Efficacité de 60-70% sur l\'incontinence d\'effort légère à modérée. Dans l\'incontinence mixte, renforcement ciblé du plancher pelvien en complément des techniques comportementales.'
+      });
+    } else {
+      recommandations.push({
+        label: 'Rééducation périnéale spécialisée en première intention',
+        tooltip: 'La rééducation périnéale par kinésithérapeute spécialisé comprend exercices de Kegel, biofeedback et électrostimulation. Efficacité de 60-70% sur l\'incontinence d\'effort légère à modérée. Durée recommandée : 3-6 mois avec séances bi-hebdomadaires.'
+      });
+    }
+    
+    // Nouvelle recommandation pour l'incontinence mixte
+    if (diagnostic.includes('mixte')) {
+      recommandations.push({
+        label: 'Évaluation du prolapsus si incontinence persistante malgré traitement',
+        tooltip: 'Un prolapsus sous-estimé peut compromettre l\'efficacité des traitements conservateurs ou médicamenteux, particulièrement chez les femmes avec antécédents gynécologiques.'
+      });
+    }
     
     if (data.profilPression.pressionClotureUretrale < 20) {
       recommandations.push({
@@ -230,13 +263,13 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
     });
 	
     recommandations.push({
-      label: 'Toxine botulique intra-détrusorienne en cas d’hyperactivité détrusorienne réfractaire ou d’intolérance aux anticholinergiques',
+      label: `Toxine botulique intra-détrusorienne en cas d'hyperactivité détrusorienne réfractaire ou d'intolérance aux anticholinergiques`,
       tooltip: 'Utilisée en deuxième intention, la toxine botulique permet de diminuer l\'hyperactivité du détrusor lorsque les anticholinergiques sont inefficaces ou mal tolérés.'
     });
 	
     recommandations.push({
       label: 'EMG périnéal conseillé pour confirmer une dyssynergie vraie',
-      tooltip: 'L’électromyogramme du sphincter permet de distinguer une dyssynergie vésico-sphinctérienne vraie d’une fausse poussée abdominale ou d’un artefact.'
+      tooltip: 'L\'électromyogramme du sphincter permet de distinguer une dyssynergie vésico-sphinctérienne vraie d\'une fausse poussée abdominale ou d\'un artefact.'
     });
   }
 
@@ -272,7 +305,7 @@ function genererExamensComplementaires(data: PatientData, diagnostic: string): A
     });
   }
 
-  if (diagnostic.includes('Incontinence d\'effort')) {
+  if (diagnostic.includes('Incontinence d\'effort') || diagnostic.includes('mixte')) {
     examens.push({
       label: 'IRM pelvienne dynamique',
       tooltip: 'L\'IRM pelvienne dynamique évalue les prolapsus associés, la mobilité urétrale et l\'intégrité des structures de soutien. Permet de planifier la chirurgie anti-incontinence et de dépister les prolapsus asymptomatiques. Examen de référence avant chirurgie.'
@@ -292,7 +325,7 @@ function genererExamensComplementaires(data: PatientData, diagnostic: string): A
 function genererTraitements(data: PatientData, diagnostic: string): Array<{ label: string; tooltip: string }> {
   const traitements: Array<{ label: string; tooltip: string }> = [];
 
-  if (diagnostic.includes('Hyperactivité détrusorienne')) {
+  if (diagnostic.includes('Hyperactivité détrusorienne') || diagnostic.includes('mixte')) {
     
     traitements.push({
       label: 'Solifénacine 5-10 mg/jour',
@@ -309,7 +342,7 @@ function genererTraitements(data: PatientData, diagnostic: string): Array<{ labe
     
     traitements.push({
       label: 'Aucun traitement pharmacologique validé',
-      tooltip: 'Aucun médicament n’a démontré d’efficacité significative dans la restauration de la contractilité détrusorienne.'
+      tooltip: 'Aucun médicament n\'a démontré d\'efficacité significative dans la restauration de la contractilité détrusorienne.'
     });
     
     traitements.push({
@@ -332,7 +365,7 @@ function genererTraitements(data: PatientData, diagnostic: string): Array<{ labe
     }
   }
 
-  if (diagnostic.includes('Incontinence d\'effort')) {
+  if (diagnostic.includes('Incontinence d\'effort') || diagnostic.includes('mixte')) {
     traitements.push({
       label: 'Duloxétine 40 mg × 2/jour',
       tooltip: 'La duloxétine (inhibiteur de recapture sérotonine-noradrénaline) augmente le tonus sphinctérien urétral par action centrale. Réduction de 50% des épisodes d\'incontinence chez 60% des patientes. Effets secondaires : nausées (25%), fatigue (15%). Traitement de 2ème intention.'
@@ -414,11 +447,21 @@ function genererPieges(data: PatientData, diagnostic: string): Array<{ label: st
 	});
   }
 
-  if (diagnostic.includes('Incontinence d\'effort')) {
-    pieges.push({
-      label: 'Rechercher systématiquement un prolapsus associé',
-      tooltip: 'Un prolapsus génital asymptomatique est présent chez 40% des femmes avec incontinence d\'effort. Sa correction chirurgicale simultanée évite les récidives et améliore les résultats fonctionnels. Examen gynécologique et IRM pelvienne systématiques.'
-    });
+  if (diagnostic.includes('Incontinence d\'effort') || diagnostic.includes('mixte')) {    
+    // Nouveaux pièges pour l'incontinence mixte
+    if (diagnostic.includes('mixte') || data.profilPression.pressionClotureUretrale < 20) {
+      pieges.push({
+        label: 'Ne pas ignorer une composante sphinctérienne associée en cas de pression de clôture basse',
+        tooltip: 'Une pression de clôture <20 cmH2O évoque une faiblesse sphinctérienne pouvant expliquer les fuites à l\'effort, même en présence d\'hyperactivité détrusorienne prédominante.'
+      });
+    }
+    
+    if (diagnostic.includes('mixte')) {
+      pieges.push({
+        label: 'Différencier fuites à l\'effort vraies et poussées liées à une urgence mal contrôlée',
+        tooltip: 'Certaines patientes rapportent des fuites à l\'effort alors qu\'il s\'agit en fait d\'un besoin urgent déclenché par le mouvement ou l\'effort. L\'interrogatoire précis et les tests de provocation permettent la distinction.'
+      });
+    }
   }
 
   return pieges;
