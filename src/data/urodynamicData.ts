@@ -107,6 +107,15 @@ function determinerDiagnostic(
   const urgenturies = data.symptomes.includes('Urgenturies');
   const fuitesMixtes = data.symptomes.includes('Fuites mixtes');
   const pressionClotureUretrale = data.profilPression.pressionClotureUretrale;
+  
+  // Nouveaux critères pour l'obstruction liée au prolapsus
+  const symptomesObstructifs = data.symptomes.some(s => 
+    ['Dysurie', 'Jet faible', 'Sensation de vidange incomplète', 'Effort de poussée'].includes(s)
+  );
+  const antecedentsProlapsus = data.antecedents.some(ant => 
+    ['Prolapsus génital', 'Cystocèle', 'Rectocèle', 'Accouchements multiples', 'Accouchements difficiles'].includes(ant)
+  );
+  const pesanteurPelvienne = data.symptomes.includes('Pesanteur pelvienne');
 
   // Diagnostic selon algorithme clinique amélioré
   
@@ -123,6 +132,7 @@ function determinerDiagnostic(
     }
   }
 
+  // Obstruction sévère
   if (indexObstruction > 40) {
     if (dyssynergie) {
       return 'Dyssynergie vésico-sphinctérienne avec obstruction fonctionnelle';
@@ -130,6 +140,35 @@ function determinerDiagnostic(
       return 'Obstruction prostatique bénigne';
     } else {
       return 'Obstruction sous-vésicale';
+    }
+  }
+
+  // Nouvelle logique pour obstruction modérée liée au prolapsus
+  if (data.sexe === 'F' && antecedentsProlapsus && symptomesObstructifs) {
+    // Critères d'obstruction modérée chez la femme avec prolapsus
+    const criteresObstructionModeree = [
+      qmax < 15 && qmax >= 10, // Qmax limite
+      pdetQmax > 25 && pdetQmax <= 50, // Pression modérément élevée
+      nomogrammes.schafer === 'Obstruction modérée' || nomogrammes.schafer === 'Équivoque',
+      data.residuPostMictionnel > 30,
+      pesanteurPelvienne
+    ];
+    
+    const nombreCriteres = criteresObstructionModeree.filter(Boolean).length;
+    
+    if (nombreCriteres >= 3) {
+      return 'Obstruction sous-vésicale modérée secondaire à un prolapsus génital';
+    }
+  }
+
+  // Obstruction équivoque nécessitant évaluation clinique
+  if (indexObstruction > 15 && indexObstruction <= 40 && symptomesObstructifs) {
+    if (data.sexe === 'M' && data.antecedents.includes('HBP')) {
+      return 'Obstruction prostatique débutante';
+    } else if (data.sexe === 'F' && antecedentsProlapsus) {
+      return 'Obstruction sous-vésicale modérée secondaire à un prolapsus génital';
+    } else {
+      return 'Obstruction sous-vésicale équivoque';
     }
   }
 
@@ -188,6 +227,26 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
       recommandations.push({
         label: 'Envisager traitement chirurgical (RTUP) si échec médical',
         tooltip: 'La résection trans-urétrale de prostate (RTUP) est indiquée en cas d\'obstruction sévère (Pdet.Qmax >60 cmH2O) ou d\'échec du traitement médical. Amélioration du Qmax de 100-200% et réduction significative des symptômes dans 85-90% des cas.'
+      });
+    }
+  }
+
+  // Nouvelles recommandations pour l'obstruction liée au prolapsus
+  if (diagnostic.includes('prolapsus génital')) {
+    recommandations.push({
+      label: 'Rééducation périnéo-sphinctérienne spécialisée en première intention',
+      tooltip: 'Programme individualisé réalisé par un kinésithérapeute spécialisé. Vise à renforcer les muscles du plancher pelvien, améliorer le contrôle sphinctérien et optimiser la coordination mictionnelle. Indiqué dès les premiers signes de dysfonction, avant tout traitement chirurgical.'
+    });
+    
+    recommandations.push({
+      label: 'Évaluation pelvienne complète avec classification POP-Q',
+      tooltip: 'Le système POP-Q (Pelvic Organ Prolapse Quantification) permet de quantifier précisément le degré de prolapsus génital et de planifier la stratégie thérapeutique. Examen clinique standardisé indispensable avant tout traitement.'
+    });
+    
+    if (data.residuPostMictionnel > 50 || data.etudePressionDebit.pressionDetrusorQmax > 40) {
+      recommandations.push({
+        label: 'Traitement du prolapsus si symptômes invalidants ou échec conservateur',
+        tooltip: 'Le traitement du prolapsus (pessaire ou chirurgie) est indiqué en cas de symptômes obstructifs persistants malgré la rééducation, ou si le prolapsus compromet la vidange vésicale (RPM >50ml, Pdet >40 cmH2O).'
       });
     }
   }
@@ -279,7 +338,7 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
 function genererExamensComplementaires(data: PatientData, diagnostic: string): Array<{ label: string; tooltip: string }> {
   const examens: Array<{ label: string; tooltip: string }> = [];
 
-  if (diagnostic.includes('Obstruction')) {
+  if (diagnostic.includes('Obstruction prostatique')) {
     examens.push({
       label: 'Échographie prostatique trans-rectale',
       tooltip: 'L\'échographie trans-rectale permet de mesurer précisément le volume prostatique, d\'évaluer la morphologie (lobe médian) et de guider la stratégie thérapeutique. Volume >40ml évoque une HBP significative. Examen de référence pour planifier la chirurgie.'
@@ -288,6 +347,19 @@ function genererExamensComplementaires(data: PatientData, diagnostic: string): A
     examens.push({
       label: 'PSA et toucher rectal',
       tooltip: 'Le dosage du PSA (antigène prostatique spécifique) et le toucher rectal permettent de dépister un cancer prostatique associé. PSA >4 ng/ml ou anomalie au toucher rectal nécessitent des biopsies prostatiques avant tout traitement de l\'HBP.'
+    });
+  }
+
+  // Nouveaux examens pour l'obstruction liée au prolapsus
+  if (diagnostic.includes('prolapsus génital')) {
+    examens.push({
+      label: 'IRM pelvienne dynamique',
+      tooltip: 'L\'IRM pelvienne dynamique permet d\'évaluer précisément le prolapsus génital et ses répercussions sur la vidange vésicale. Examen de référence pour quantifier les prolapsus multi-compartimentaux et planifier la stratégie chirurgicale si nécessaire.'
+    });
+    
+    examens.push({
+      label: 'Échographie vésicale pour quantification du RPM',
+      tooltip: 'La mesure échographique du résidu post-mictionnel permet de surveiller l\'impact de l\'obstruction sur la vidange vésicale et d\'évaluer l\'efficacité des traitements conservateurs. Surveillance recommandée tous les 3-6 mois.'
     });
   }
 
@@ -365,6 +437,24 @@ function genererTraitements(data: PatientData, diagnostic: string): Array<{ labe
     }
   }
 
+  // Nouveaux traitements pour l'obstruction liée au prolapsus
+  if (diagnostic.includes('prolapsus génital')) {
+    
+    if (data.age > 70 || data.antecedents.includes('Contre-indication chirurgicale')) {
+      traitements.push({
+        label: 'Pessaire si contre-indication chirurgicale',
+        tooltip: 'Le pessaire est un dispositif médical intra-vaginal qui soutient les organes prolabés. Indiqué chez les patientes âgées, à haut risque chirurgical ou refusant la chirurgie. Efficacité de 60-80% sur les symptômes obstructifs avec bonne tolérance.'
+      });
+    }
+    
+    if (data.etudePressionDebit.pressionDetrusorQmax > 40 || data.residuPostMictionnel > 80) {
+      traitements.push({
+        label: 'Chirurgie de correction du prolapsus en cas d\'échec du traitement conservateur',
+        tooltip: 'La chirurgie de correction du prolapsus (promontofixation, colposuspension) est indiquée en cas d\'échec de la rééducation et de symptômes obstructifs invalidants. Amélioration des symptômes dans 85-90% des cas avec restauration d\'une vidange normale.'
+      });
+    }
+  }
+
   if (diagnostic.includes('Incontinence d\'effort') || diagnostic.includes('mixte')) {
     traitements.push({
       label: 'Duloxétine 40 mg × 2/jour',
@@ -386,14 +476,23 @@ function genererSurveillance(data: PatientData, diagnostic: string): Array<{ lab
   const surveillance: Array<{ label: string; tooltip: string }> = [];
 
   surveillance.push({
-    label: 'Calendrier mictionnel sur 3 jours',
-    tooltip: 'Le calendrier mictionnel objective la fréquence des mictions, les volumes urinés, les épisodes d\'urgence et d\'incontinence. Outil de surveillance de l\'efficacité thérapeutique et d\'éducation du patient. À répéter tous les 3-6 mois selon l\'évolution clinique.'
+    label: 'Calendrier mictionnel sur 3 jours, à répéter après 3 mois de traitement',
+    tooltip: 'Relevé détaillé des horaires, volumes urinés, épisodes d\'urgence ou fuites sur 72 heures. Permet d\'évaluer l\’efficacité d\’un traitement et l\’évolution des symptômes. À renouveler 3 mois après l\’initiation thérapeutique pour objectiver l\’amélioration ou ajuster la prise en charge.'
   });
 
   if (data.residuPostMictionnel > 50) {
     surveillance.push({
       label: 'Mesure échographique du résidu post-mictionnel',
       tooltip: 'La surveillance du RPM par échographie sus-pubienne permet de détecter une aggravation de la vidange vésicale. Fréquence : mensuelle si RPM >100ml, trimestrielle si RPM 50-100ml. RPM >150ml de façon répétée nécessite une réévaluation thérapeutique.'
+    });
+  }
+
+  // Surveillance spécifique pour l'obstruction liée au prolapsus
+  if (diagnostic.includes('prolapsus génital')) {
+    
+    surveillance.push({
+      label: 'Débitmétrie libre à 6 mois',
+      tooltip: 'La débitmétrie libre de contrôle permet d\'objectiver l\'amélioration du débit urinaire après traitement conservateur du prolapsus. Objectif : Qmax >15 ml/s avec amélioration de la forme de la courbe débitmétrique.'
     });
   }
 
@@ -407,7 +506,7 @@ function genererSurveillance(data: PatientData, diagnostic: string): Array<{ lab
   if (diagnostic.includes('Obstruction')) {
     surveillance.push({
       label: 'Débitmétrie libre annuelle',
-      tooltip: 'La débitmétrie libre permet de surveiller l\'évolution de l\'obstruction et l\'efficacité du traitement. Qmax <10 ml/s évoque une aggravation nécessitant une réévaluation. Examen simple, non invasif, réalisable en consultation.'
+      tooltip: 'Suivi annuel de la qualité de la miction. La débitmétrie libre permet de dépister une récidive d’obstruction ou une dégradation fonctionnelle progressive. Un Qmax <10 ml/s évoque une aggravation nécessitant une réévaluation. Examen simple, non invasif, réalisable en consultation.'
     });
   }
 
@@ -421,6 +520,19 @@ function genererPieges(data: PatientData, diagnostic: string): Array<{ label: st
     label: 'Ne pas interpréter un Qmax faible avec un petit volume vidé',
     tooltip: 'Un Qmax <15 ml/s n\'est significatif que si le volume vidé est >150ml. Avec un petit volume (<150ml), le Qmax peut être artificiellement bas sans signification pathologique. Toujours corréler Qmax et volume pour une interprétation correcte.'
   });
+
+  // Nouveaux pièges pour l'obstruction liée au prolapsus
+  if (diagnostic.includes('prolapsus génital')) {
+    pieges.push({
+      label: 'Ne pas ignorer un prolapsus modéré pouvant masquer une obstruction',
+      tooltip: 'Un prolapsus génital modéré peut provoquer une obstruction fonctionnelle discrète, souvent sous-estimée cliniquement. L\'association symptômes obstructifs + antécédents de prolapsus + index urodynamiques limites doit faire évoquer cette étiologie.'
+    });
+    
+    pieges.push({
+      label: 'Toujours corréler clinique et données urodynamiques',
+      tooltip: 'Dans l\'obstruction liée au prolapsus, les index urodynamiques peuvent être dans la zone équivoque. L\'interprétation doit intégrer les symptômes, l\'examen clinique et les antécédents gynécologiques pour poser le bon diagnostic.'
+    });
+  }
 
   if (data.debitMetrie.formeDebitmetrie === 'intermittente') {
     pieges.push({
