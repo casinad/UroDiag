@@ -234,7 +234,7 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
   // Nouvelles recommandations pour l'obstruction liée au prolapsus
   if (diagnostic.includes('prolapsus génital')) {
     recommandations.push({
-      label: 'Rééducation périnéo-sphinctérienne spécialisée en première intention',
+      label: 'Rééducation périnéale spécialisée en première intention',
       tooltip: 'Programme individualisé réalisé par un kinésithérapeute spécialisé. Vise à renforcer les muscles du plancher pelvien, améliorer le contrôle sphinctérien et optimiser la coordination mictionnelle. Indiqué dès les premiers signes de dysfonction, avant tout traitement chirurgical.'
     });
     
@@ -245,7 +245,7 @@ function genererRecommandations(data: PatientData, diagnostic: string): Array<{ 
     
     if (data.residuPostMictionnel > 50 || data.etudePressionDebit.pressionDetrusorQmax > 40) {
       recommandations.push({
-        label: 'Traitement du prolapsus si symptômes invalidants ou échec conservateur',
+        label: 'Traitement chirurgical du prolapsus en cas d’échec de la rééducation ou de symptômes invalidants',
         tooltip: 'Le traitement du prolapsus (pessaire ou chirurgie) est indiqué en cas de symptômes obstructifs persistants malgré la rééducation, ou si le prolapsus compromet la vidange vésicale (RPM >50ml, Pdet >40 cmH2O).'
       });
     }
